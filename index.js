@@ -25,6 +25,10 @@ app.use((req, res, next) => {
 });
 
 const users = [];
+const apps = [];
+const buckets = [];
+const databases = [];
+const staticSites = [];
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -85,6 +89,62 @@ app.post('/login', (req, res) => {
   }
   const token = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET || 'secret');
   res.json({ token });
+});
+
+// Application hosting endpoints
+app.get('/apps', authenticateToken, (req, res) => {
+  res.json(apps);
+});
+
+app.post('/apps', authenticateToken, (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: 'name required' });
+  const id = apps.length + 1;
+  const record = { id, name };
+  apps.push(record);
+  res.status(201).json(record);
+});
+
+// Object storage endpoints
+app.get('/storage', authenticateToken, (req, res) => {
+  res.json(buckets);
+});
+
+app.post('/storage', authenticateToken, (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: 'name required' });
+  const id = buckets.length + 1;
+  const record = { id, name };
+  buckets.push(record);
+  res.status(201).json(record);
+});
+
+// Database hosting endpoints
+app.get('/databases', authenticateToken, (req, res) => {
+  res.json(databases);
+});
+
+app.post('/databases', authenticateToken, (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: 'name required' });
+  const id = databases.length + 1;
+  const record = { id, name };
+  databases.push(record);
+  res.status(201).json(record);
+});
+
+// Static site hosting endpoints
+app.get('/static-sites', authenticateToken, (req, res) => {
+  res.json(staticSites);
+});
+
+app.post('/static-sites', authenticateToken, (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: 'name required' });
+  const id = staticSites.length + 1;
+  const record = { id, name };
+  staticSites.push(record);
+  res.status(201).json(record);
 });
 
 app.use((err, req, res, next) => {
