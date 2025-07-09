@@ -3,10 +3,26 @@ const express = require('express');
 const morgan = require('morgan');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { PostHog } = require('posthog-node');
 
 const app = express();
 app.use(express.json());
 app.use(morgan('dev'));
+
+const posthogKey = process.env.POSTHOG_API_KEY;
+const posthogHost = process.env.POSTHOG_HOST;
+const posthog = posthogKey
+  ? new PostHog(posthogKey, { host: posthogHost })
+  : { capture: () => {}, shutdown: () => {} };
+
+app.use((req, res, next) => {
+  posthog.capture({
+    distinctId: req.ip,
+    event: 'request',
+    properties: { method: req.method, path: req.path }
+  });
+  next();
+});
 
 const users = [];
 
@@ -71,11 +87,24 @@ app.post('/login', (req, res) => {
   res.json({ token });
 });
 
+app.use((err, req, res, next) => {
+  posthog.capture({
+    distinctId: req.ip,
+    event: 'error',
+    properties: { message: err.message, stack: err.stack }
+  });
+  res.status(500).json({ error: 'internal server error' });
+});
+
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
   });
 }
+
+process.on('exit', () => {
+  posthog.shutdown();
+});
 
 module.exports = app;
